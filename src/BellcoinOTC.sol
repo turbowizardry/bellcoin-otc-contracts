@@ -8,6 +8,7 @@ contract BellcoinOTC {
         string buyerBellcoinAddress;
         uint256 bellcoinAmount;
         uint256 priceInEth;
+        bool isDeposited;
         bool isSold;
         bool isFulfilled;
         bool isCancelled;
@@ -36,6 +37,7 @@ contract BellcoinOTC {
             buyerBellcoinAddress: "",
             bellcoinAmount: bellcoinAmount,
             priceInEth: priceInEth,
+            isDeposited: false,
             isSold: false,
             isFulfilled: false,
             isCancelled: false
@@ -45,7 +47,7 @@ contract BellcoinOTC {
 
     function purchaseDeal(uint256 listingIndex, string memory bellcoinAddress) public payable {
         require(msg.value == listings[listingIndex].priceInEth, "Incorrect ETH amount");
-        require(!listings[listingIndex].isSold && !listings[listingIndex].isCancelled, "Listing not available");
+        require(listings[listingIndex].isDeposited && !listings[listingIndex].isSold && !listings[listingIndex].isCancelled, "Listing not available");
         require(bytes(listings[listingIndex].buyerBellcoinAddress).length == 0, "Buyer exists");
 
         uint256 fee = calculateFee(listings[listingIndex].priceInEth);
@@ -65,6 +67,10 @@ contract BellcoinOTC {
     function markAsFulfilled(uint256 listingIndex) public onlyOwner {
         require(listings[listingIndex].isSold, "Listing is not sold yet");
         listings[listingIndex].isFulfilled = true;
+    }
+
+    function markAsDeposited(uint256 listingIndex) public onlyOwner {
+        listings[listingIndex].isDeposited = true;
     }
 
     function updatePrice(uint256 listingIndex, uint256 newPriceInEth) public {
