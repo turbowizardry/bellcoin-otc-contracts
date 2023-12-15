@@ -26,6 +26,7 @@ contract BellcoinOTCTest is Test {
     function testListDeal() public {
         (address sellerEthAddress, 
         string memory sellerBellcoinAddress, 
+        string memory buyerBellcoinAddress, 
         uint256 amount, 
         uint256 price, 
         bool isSold, 
@@ -33,6 +34,8 @@ contract BellcoinOTCTest is Test {
         bool isCancelled) = otc.listings(0);
 
         assertEq(sellerEthAddress, seller);
+        assertEq(sellerBellcoinAddress, 'bellcoin_address');
+        assertEq(buyerBellcoinAddress, '');
         assertEq(amount, bellcoinAmount);
         assertEq(price, priceInEth);
         assert(!isSold);
@@ -43,10 +46,10 @@ contract BellcoinOTCTest is Test {
     function testPurchaseDealWithFee() public {
         vm.startPrank(buyer);
         vm.deal(buyer, 5 ether); // Ensure buyer has enough ETH
-        otc.purchaseDeal{value: priceInEth}(0);
+        otc.purchaseDeal{value: priceInEth}(0, 'buyer_address');
         vm.stopPrank();
 
-        (address sellerEthAddress, , , , bool isSold, , ) = otc.listings(0);
+        (address sellerEthAddress, , , , , bool isSold, , ) = otc.listings(0);
 
         assert(isSold);
         assertEq(address(sellerEthAddress).balance, priceInEth - calculateFee(priceInEth));
@@ -60,13 +63,13 @@ contract BellcoinOTCTest is Test {
     function testMarkAsFulfilled() public {
         vm.startPrank(buyer);
         vm.deal(buyer, 5 ether); // Ensure buyer has enough ETH
-        otc.purchaseDeal{value: priceInEth}(0);
+        otc.purchaseDeal{value: priceInEth}(0, 'buyer_address');
         vm.stopPrank();
 
         vm.prank(contractOwner);
         otc.markAsFulfilled(0);
 
-        (, , , , , bool isFulfilled, ) = otc.listings(0);
+        (, , , , , , bool isFulfilled, ) = otc.listings(0);
 
         assert(isFulfilled);
     }
@@ -76,8 +79,7 @@ contract BellcoinOTCTest is Test {
         vm.prank(seller);
         otc.updatePrice(0, newPriceInEth);
 
-        // Destructure the tuple to get individual fields
-        (, , , uint256 price, , , ) = otc.listings(0);
+        (, , , , uint256 price, , , ) = otc.listings(0);
 
         assertEq(price, newPriceInEth);
     }
@@ -86,7 +88,7 @@ contract BellcoinOTCTest is Test {
         vm.prank(seller);
         otc.cancelListing(0);
 
-        (, , , , , , bool isCancelled) = otc.listings(0);
+        (, , , , , , , bool isCancelled) = otc.listings(0);
 
         assert(isCancelled);
     }

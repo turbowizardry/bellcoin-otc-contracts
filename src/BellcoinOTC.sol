@@ -5,6 +5,7 @@ contract BellcoinOTC {
     struct Listing {
         address sellerEthAddress;
         string sellerBellcoinAddress;
+        string buyerBellcoinAddress;
         uint256 bellcoinAmount;
         uint256 priceInEth;
         bool isSold;
@@ -15,6 +16,7 @@ contract BellcoinOTC {
     address public owner;
     Listing[] public listings;
     uint256 public feePercentage = 5;
+    bool public isPaused;
 
     constructor() {
         owner = msg.sender;
@@ -26,9 +28,12 @@ contract BellcoinOTC {
     }
 
     function listDeal(string memory bellcoinAddress, uint256 bellcoinAmount, uint256 priceInEth) public {
+        require(!isPaused, "New listings paused");
+
         Listing memory newListing = Listing({
             sellerEthAddress: msg.sender,
             sellerBellcoinAddress: bellcoinAddress,
+            buyerBellcoinAddress: "",
             bellcoinAmount: bellcoinAmount,
             priceInEth: priceInEth,
             isSold: false,
@@ -38,13 +43,17 @@ contract BellcoinOTC {
         listings.push(newListing);
     }
 
-    function purchaseDeal(uint256 listingIndex) public payable {
+    function purchaseDeal(uint256 listingIndex, string memory bellcoinAddress) public payable {
         require(msg.value == listings[listingIndex].priceInEth, "Incorrect ETH amount");
         require(!listings[listingIndex].isSold && !listings[listingIndex].isCancelled, "Listing not available");
+        require(bytes(listings[listingIndex].buyerBellcoinAddress).length == 0, "Buyer exists");
+
         uint256 fee = calculateFee(listings[listingIndex].priceInEth);
         uint256 sellerAmount = listings[listingIndex].priceInEth - fee;
 
         listings[listingIndex].isSold = true;
+        listings[listingIndex].buyerBellcoinAddress = bellcoinAddress;
+
         payable(listings[listingIndex].sellerEthAddress).transfer(sellerAmount);
         payable(owner).transfer(fee); // Transfer fee to contract owner
     }
@@ -73,6 +82,10 @@ contract BellcoinOTC {
     function changeFeePercentage(uint256 newFeePercentage) public onlyOwner {
         require(newFeePercentage <= 5, "Fee percentage cannot exceed the maximum limit");
         feePercentage = newFeePercentage;
+    }
+
+    function setPaused(bool _pause) public onlyOwner {
+        isPaused = _pause;
     }
 
     receive() external payable {
