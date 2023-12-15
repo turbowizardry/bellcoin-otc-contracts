@@ -94,6 +94,10 @@ contract BellcoinOTC {
         isPaused = _pause;
     }
 
+    function getListings() public view returns (Listing[] memory) {
+        return listings;
+    }
+
     receive() external payable {
 
     }

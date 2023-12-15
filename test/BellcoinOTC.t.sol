@@ -29,6 +29,7 @@ contract BellcoinOTCTest is Test {
         string memory buyerBellcoinAddress, 
         uint256 amount, 
         uint256 price, 
+        bool isDeposited, 
         bool isSold, 
         bool isFulfilled, 
         bool isCancelled) = otc.listings(0);
@@ -38,6 +39,7 @@ contract BellcoinOTCTest is Test {
         assertEq(buyerBellcoinAddress, '');
         assertEq(amount, bellcoinAmount);
         assertEq(price, priceInEth);
+        assert(!isDeposited);
         assert(!isSold);
         assert(!isFulfilled);
         assert(!isCancelled);
@@ -49,7 +51,7 @@ contract BellcoinOTCTest is Test {
         otc.purchaseDeal{value: priceInEth}(0, 'buyer_address');
         vm.stopPrank();
 
-        (address sellerEthAddress, , , , , bool isSold, , ) = otc.listings(0);
+        (address sellerEthAddress, , , , , , bool isSold, , ) = otc.listings(0);
 
         assert(isSold);
         assertEq(address(sellerEthAddress).balance, priceInEth - calculateFee(priceInEth));
@@ -69,7 +71,7 @@ contract BellcoinOTCTest is Test {
         vm.prank(contractOwner);
         otc.markAsFulfilled(0);
 
-        (, , , , , , bool isFulfilled, ) = otc.listings(0);
+        (, , , , , , , bool isFulfilled, ) = otc.listings(0);
 
         assert(isFulfilled);
     }
@@ -79,7 +81,7 @@ contract BellcoinOTCTest is Test {
         vm.prank(seller);
         otc.updatePrice(0, newPriceInEth);
 
-        (, , , , uint256 price, , , ) = otc.listings(0);
+        (, , , , uint256 price, , , , ) = otc.listings(0);
 
         assertEq(price, newPriceInEth);
     }
@@ -88,7 +90,7 @@ contract BellcoinOTCTest is Test {
         vm.prank(seller);
         otc.cancelListing(0);
 
-        (, , , , , , , bool isCancelled) = otc.listings(0);
+        (, , , , , , , , bool isCancelled) = otc.listings(0);
 
         assert(isCancelled);
     }
