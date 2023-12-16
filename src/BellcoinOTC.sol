@@ -18,6 +18,7 @@ contract BellcoinOTC {
     Listing[] public listings;
     uint256 public feePercentage = 5;
     bool public isPaused;
+    mapping(address => uint256[]) private sellerListings;
 
     constructor() {
         owner = msg.sender;
@@ -42,6 +43,9 @@ contract BellcoinOTC {
             isFulfilled: false,
             isCancelled: false
         });
+
+        sellerListings[msg.sender].push(listings.length); //track index of listing in sellerListings array
+
         listings.push(newListing);
     }
 
@@ -73,12 +77,6 @@ contract BellcoinOTC {
         listings[listingIndex].isDeposited = true;
     }
 
-    function updatePrice(uint256 listingIndex, uint256 newPriceInEth) public {
-        require(msg.sender == listings[listingIndex].sellerEthAddress, "Only seller can update price");
-        require(!listings[listingIndex].isSold && !listings[listingIndex].isCancelled, "Listing not available");
-        listings[listingIndex].priceInEth = newPriceInEth;
-    }
-
     function cancelListing(uint256 listingIndex) public {
         require(msg.sender == listings[listingIndex].sellerEthAddress, "Only seller can cancel");
         require(!listings[listingIndex].isSold, "Listing is already sold");
@@ -96,6 +94,14 @@ contract BellcoinOTC {
 
     function getListings() public view returns (Listing[] memory) {
         return listings;
+    }
+
+    function getSellerListingIds(address _address) public view returns (uint[] memory) {
+        return sellerListings[_address];
+    }
+
+    function changeOwner(address newOwner) public onlyOwner {
+        owner = newOwner;
     }
 
     receive() external payable {
